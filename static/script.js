@@ -1,7 +1,8 @@
+
 (function () {
   const moon = document.getElementById('moon');
   const fileInput = document.getElementById('fileInput');
-  const moonShadow = document.getElementById('moonShadow');
+  const moonLight = document.getElementById('moonLight');
   const moonLabel = document.getElementById('moonLabel');
   const progressPanel = document.getElementById('progressPanel');
   const resultPanel = document.getElementById('resultPanel');
@@ -117,20 +118,19 @@
     const diff = expiresAt - now;
     if (diff <= 0) {
       countdownEl.textContent = 'ვადა ამოიწურა';
-      moonShadow.style.width = '100%';
+      moonLight.style.transform = 'translateX(100%)';
       clearInterval(countdownTimer);
       return;
     }
-    const totalMs = expiresAt - (expiresAt - diff);
     const hours = Math.floor(diff / 3600000);
     const mins = Math.floor((diff % 3600000) / 60000);
     const secs = Math.floor((diff % 60000) / 1000);
     countdownEl.textContent = `ქრება: ${hours}სთ ${mins}წთ ${secs}წმ`;
 
-    // moon shadow grows as time elapses (assumes fixed window from server config)
+    // light disc slides away as time elapses, revealing the dark disc beneath (waning crescent)
     const totalWindowMs = window.MOONFADE_TOTAL_MS || (6 * 3600000);
     const elapsedRatio = 1 - Math.min(1, diff / totalWindowMs);
-    moonShadow.style.width = (elapsedRatio * 100) + '%';
+    moonLight.style.transform = `translateX(${elapsedRatio * 100}%)`;
   }
 
   copyBtn.addEventListener('click', () => {
