@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>მთვარისფერი — ვიდეო, რომელიც 6 საათში ქრება</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Georgian:wght@400;600;700&family=Noto+Sans+Georgian:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="stars" aria-hidden="true"></div>
+
+<header class="topbar">
+  <div class="brand">მთვარისფერი</div>
+  <div class="tagline">ვადა: {{ expiry_hours|int }} საათი</div>
+</header>
+
+<main class="hero">
+  <div class="hero-copy">
+    <h1>ატვირთე ვიდეო.<br>გააზიარე ბმული.<br><span class="accent">6 საათში ის ქრება.</span></h1>
+    <p class="sub">ხარისხის დაკარგვის გარეშე — ფაილი ინახება ზუსტად ისე, როგორც ატვირთე. ბმული ავტომატურად ქრება ვადის ამოწურვისას და ადგილი თავისუფლდება.</p>
+  </div>
+
+  <div class="moon-wrap">
+    <div class="moon" id="moon">
+      <div class="moon-disc"></div>
+      <div class="moon-shadow" id="moonShadow"></div>
+      <input type="file" id="fileInput" accept="video/*" hidden>
+      <div class="moon-label" id="moonLabel">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 3v12m0 0l-4-4m4 4l4-4M5 19h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>ჩააგდე ვიდეო აქ<br>ან დააჭირე ასარჩევად</span>
+      </div>
+    </div>
+  </div>
+</main>
+
+<section class="panel" id="progressPanel" hidden>
+  <div class="panel-inner">
+    <p class="panel-file" id="fileName">—</p>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <p class="panel-status" id="statusText">იტვირთება…</p>
+  </div>
+</section>
+
+<section class="panel" id="resultPanel" hidden>
+  <div class="panel-inner">
+    <p class="panel-label">ბმული მზადაა</p>
+    <div class="link-row">
+      <input type="text" id="linkOutput" readonly>
+      <button id="copyBtn">კოპირება</button>
+    </div>
+    <p class="countdown" id="countdown"></p>
+
+    <div class="email-row">
+      <input type="email" id="emailInput" placeholder="ან გაუგზავნე მეილზე (არასავალდებულო)">
+      <button id="sendEmailBtn">გაგზავნა</button>
+    </div>
+    <p class="email-status" id="emailStatus"></p>
+  </div>
+</section>
+
+<footer class="foot">
+  <p>ფაილები ავტომატურად და შეუქცევადად იშლება ვადის ამოწურვისას.</p>
+</footer>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
