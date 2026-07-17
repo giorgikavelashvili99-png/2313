@@ -2,7 +2,7 @@
   const countdownEl = document.getElementById('countdown');
   const downloadBtn = document.getElementById('downloadBtn');
   const downloadStatus = document.getElementById('downloadStatus');
-  const moonShadow = document.getElementById('moonShadow');
+  const moonLight = document.getElementById('moonLight');
 
   const fileId = window.MOONFADE_FILE_ID;
   const expiresAt = new Date(window.MOONFADE_EXPIRES_AT + 'Z');
@@ -13,7 +13,7 @@
     const diff = expiresAt - now;
     if (diff <= 0) {
       countdownEl.textContent = 'ვადა ამოიწურა';
-      moonShadow.style.width = '100%';
+      moonLight.style.transform = 'translateX(100%)';
       downloadBtn.disabled = true;
       downloadBtn.textContent = 'ვადა გასულია';
       clearInterval(timer);
@@ -24,7 +24,7 @@
     const secs = Math.floor((diff % 60000) / 1000);
     countdownEl.textContent = `ქრება: ${hours}სთ ${mins}წთ ${secs}წმ`;
     const elapsedRatio = 1 - Math.min(1, diff / TOTAL_WINDOW_MS);
-    moonShadow.style.width = (elapsedRatio * 100) + '%';
+    moonLight.style.transform = `translateX(${elapsedRatio * 100}%)`;
   }
 
   const timer = setInterval(tick, 1000);
