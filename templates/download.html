@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ filename }} — მთვარისფერი</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Georgian:wght@400;600;700&family=Noto+Sans+Georgian:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="stars" aria-hidden="true"></div>
+
+<header class="topbar">
+  <div class="brand">მთვარისფერი</div>
+</header>
+
+<main class="hero centered">
+  <div class="moon-wrap">
+    <div class="moon" id="moon">
+      <div class="moon-disc"></div>
+      <div class="moon-shadow" id="moonShadow"></div>
+      <div class="moon-label static">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 21V9m0 0l-4 4m4-4l4 4M5 5h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero-copy centered">
+    <h1 class="filename-title">{{ filename }}</h1>
+    <p class="countdown" id="countdown">დრო იტვირთება…</p>
+    <button class="download-btn" id="downloadBtn">ვიდეოს გადმოწერა</button>
+    <p class="panel-status" id="downloadStatus"></p>
+  </div>
+</main>
+
+<footer class="foot">
+  <p>ეს ბმული ავტომატურად გაქრება ვადის ამოწურვისას.</p>
+</footer>
+
+<script>
+  window.MOONFADE_FILE_ID = "{{ file_id }}";
+  window.MOONFADE_EXPIRES_AT = "{{ expires_at }}";
+</script>
+<script src="{{ url_for('static', filename='download.js') }}"></script>
+</body>
+</html>
