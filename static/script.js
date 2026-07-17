@@ -1,4 +1,3 @@
-
 (function () {
   const moon = document.getElementById('moon');
   const fileInput = document.getElementById('fileInput');
