@@ -25,8 +25,10 @@
 
   <div class="moon-wrap">
     <div class="moon" id="moon">
-      <div class="moon-disc"></div>
-      <div class="moon-shadow" id="moonShadow"></div>
+      <div class="moon-mask">
+        <div class="moon-dark"></div>
+        <div class="moon-light" id="moonLight"></div>
+      </div>
       <input type="file" id="fileInput" accept="video/*" hidden>
       <div class="moon-label" id="moonLabel">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
