@@ -1,0 +1,297 @@
+:root {
+  --bg: #0B1220;
+  --bg-panel: #101B30;
+  --text: #F2EFE9;
+  --text-dim: #8B93A0;
+  --accent: #E8B75D;
+  --accent-soft: rgba(232, 183, 93, 0.18);
+  --line: rgba(242, 239, 233, 0.12);
+  --moon-light: #F5EFDD;
+  --moon-shadow: #0B1220;
+  --radius: 14px;
+  --serif: 'Noto Serif Georgian', serif;
+  --sans: 'Noto Sans Georgian', sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  min-height: 100%;
+  overflow-x: hidden;
+}
+
+.stars {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,.5), transparent),
+    radial-gradient(1px 1px at 65% 15%, rgba(255,255,255,.35), transparent),
+    radial-gradient(1.5px 1.5px at 80% 60%, rgba(255,255,255,.4), transparent),
+    radial-gradient(1px 1px at 40% 80%, rgba(255,255,255,.3), transparent),
+    radial-gradient(1px 1px at 10% 65%, rgba(255,255,255,.4), transparent),
+    radial-gradient(1.5px 1.5px at 90% 85%, rgba(255,255,255,.3), transparent);
+  background-size: 100% 100%;
+  pointer-events: none;
+}
+
+.topbar {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 28px 48px;
+}
+
+.brand {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 1.25rem;
+  letter-spacing: 0.02em;
+}
+
+.tagline {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  border: 1px solid var(--line);
+  padding: 6px 14px;
+  border-radius: 100px;
+}
+
+.hero {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 48px;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 40px 48px 20px;
+  flex-wrap: wrap;
+}
+
+.hero.centered {
+  flex-direction: column;
+  text-align: center;
+  padding-top: 60px;
+}
+
+.hero-copy {
+  flex: 1 1 420px;
+  min-width: 280px;
+}
+
+.hero-copy.centered {
+  max-width: 480px;
+}
+
+h1 {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 2.6rem;
+  line-height: 1.18;
+  margin: 0 0 20px;
+}
+
+.filename-title {
+  font-size: 1.6rem;
+  word-break: break-word;
+}
+
+.accent { color: var(--accent); }
+
+.sub {
+  color: var(--text-dim);
+  font-size: 1.02rem;
+  line-height: 1.6;
+  max-width: 440px;
+}
+
+/* --- Moon: the signature element --- */
+.moon-wrap {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: center;
+  margin: 20px 0;
+}
+
+.moon {
+  position: relative;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 0 60px 10px rgba(232, 183, 93, 0.12), inset 0 0 40px rgba(0,0,0,0.3);
+  transition: box-shadow 0.4s ease;
+}
+
+.moon:hover { box-shadow: 0 0 70px 14px rgba(232, 183, 93, 0.2), inset 0 0 40px rgba(0,0,0,0.3); }
+
+.moon.dragover { box-shadow: 0 0 90px 18px rgba(232, 183, 93, 0.35), inset 0 0 40px rgba(0,0,0,0.3); }
+
+.moon-disc {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 30%, #FFFCF3 0%, var(--moon-light) 45%, #D8CFAF 100%);
+}
+
+.moon-disc.dark {
+  background: radial-gradient(circle at 35% 30%, #1a2540 0%, #0B1220 60%);
+}
+
+.moon-shadow {
+  position: absolute;
+  top: -10%;
+  height: 120%;
+  width: 0%;
+  right: 0;
+  background: var(--moon-shadow);
+  box-shadow: -18px 0 30px 6px rgba(11, 18, 32, 0.9);
+  border-radius: 45% 0 0 45% / 50% 0 0 50%;
+  transition: width 0.6s linear;
+}
+
+.moon-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+  color: #2b2410;
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 20px;
+  pointer-events: none;
+}
+
+.moon-label.static { color: var(--text); }
+
+.new-moon .moon-label { color: var(--text-dim); }
+
+/* --- Panels --- */
+.panel {
+  position: relative;
+  z-index: 1;
+  max-width: 640px;
+  margin: 24px auto 0;
+  padding: 0 24px;
+}
+
+.panel-inner {
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 28px 32px;
+}
+
+.panel-file {
+  font-weight: 600;
+  margin: 0 0 16px;
+  word-break: break-word;
+}
+
+.panel-label {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  margin: 0 0 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.progress-track {
+  height: 8px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 100px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  transition: width 0.2s ease;
+}
+
+.panel-status {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  margin: 14px 0 0;
+}
+
+.link-row, .email-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+input[type="text"], input[type="email"] {
+  flex: 1;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 0.95rem;
+}
+
+input::placeholder { color: var(--text-dim); }
+
+button, .download-btn {
+  background: var(--accent);
+  color: #211a08;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 20px;
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+button:hover, .download-btn:hover { transform: translateY(-1px); background: #f0c374; }
+
+.countdown {
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 1rem;
+  margin: 16px 0;
+}
+
+.email-status { color: var(--text-dim); font-size: 0.85rem; margin-top: 6px; }
+
+.foot {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  padding: 60px 24px 30px;
+}
+
+@media (max-width: 720px) {
+  .topbar { padding: 20px 24px; }
+  .hero { padding: 20px 24px; }
+  h1 { font-size: 2rem; }
+  .moon { width: 210px; height: 210px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .moon-shadow, button, .download-btn { transition: none; }
+}
