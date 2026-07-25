@@ -99,6 +99,27 @@ html, body {
   backdrop-filter: blur(6px);
 }
 
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nav-link {
+  color: var(--text);
+  font-size: 0.82rem;
+  font-family: var(--sans);
+  text-decoration: none;
+  border: 1px solid var(--line);
+  padding: 7px 16px;
+  border-radius: 100px;
+  background: rgba(255,255,255,0.02);
+  backdrop-filter: blur(6px);
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.nav-link:hover { border-color: var(--accent); color: var(--accent); }
+
 .hero {
   position: relative;
   z-index: 1;
@@ -331,6 +352,71 @@ button:active, .download-btn:active { transform: translateY(0); }
 }
 
 .email-status { color: var(--text-dim); font-size: 0.85rem; margin-top: 6px; }
+
+/* ---------------- Compressor panel ---------------- */
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.field label {
+  display: block;
+  color: var(--text-dim);
+  font-size: 0.76rem;
+  margin-bottom: 7px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.field select,
+.field input[type="number"] {
+  width: 100%;
+  min-height: 46px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  appearance: none;
+}
+
+.field select:focus,
+.field input:focus {
+  outline: none;
+  border-color: rgba(232, 183, 93, 0.5);
+}
+
+.full-width { width: 100%; }
+
+.compress-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 4px 0 20px;
+  font-size: 0.92rem;
+  color: var(--text-dim);
+}
+
+.compress-stats strong { color: var(--text); }
+
+.reduction-badge {
+  color: #201a08;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+  padding: 4px 12px;
+  border-radius: 100px;
+  font-weight: 700;
+  font-size: 0.82rem;
+}
+
+@media (max-width: 720px) {
+  .settings-grid { grid-template-columns: 1fr; }
+}
 
 .foot {
   position: relative;
