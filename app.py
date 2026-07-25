@@ -1,8 +1,11 @@
 import os
 import time
 import uuid
+import shutil
 import sqlite3
+import tempfile
 import threading
+import subprocess
 from datetime import datetime, timedelta
 
 import boto3
@@ -44,6 +47,10 @@ DB_PATH = os.environ.get("DB_PATH", "moonfade.db")
 
 MAX_UPLOAD_BYTES = int(os.environ.get("MAX_UPLOAD_BYTES", str(4 * 1024 * 1024 * 1024)))  # 4GB default
 
+# ffmpeg/ffprobe binaries — on Render these come from the Docker image (see Dockerfile).
+FFMPEG_BIN = os.environ.get("FFMPEG_BIN", "ffmpeg")
+FFPROBE_BIN = os.environ.get("FFPROBE_BIN", "ffprobe")
+
 app = Flask(__name__)
 
 s3 = boto3.client(
@@ -80,6 +87,32 @@ def init_db():
             expires_at TEXT NOT NULL,
             finalized INTEGER DEFAULT 0,
             deleted INTEGER DEFAULT 0
+        )
+        """
+    )
+    conn.commit()
+    conn.close()
+
+
+def init_compress_table():
+    conn = sqlite3.connect(DB_PATH)
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS compress_jobs (
+            id TEXT PRIMARY KEY,
+            input_file_id TEXT NOT NULL,
+            output_file_id TEXT,
+            filename TEXT,
+            target_mb REAL,
+            codec TEXT,
+            fps TEXT,
+            status TEXT DEFAULT 'queued',
+            progress REAL DEFAULT 0,
+            message TEXT,
+            original_size INTEGER,
+            output_size INTEGER,
+            error TEXT,
+            created_at TEXT NOT NULL
         )
         """
     )
@@ -163,7 +196,133 @@ def send_email(to_email, link, filename, expires_at):
 
 
 # ---------------------------------------------------------------------------
-# Routes
+# Compression (server-side ffmpeg, runs in a background thread)
+# ---------------------------------------------------------------------------
+def get_video_duration(path):
+    try:
+        r = subprocess.run(
+            [FFPROBE_BIN, "-v", "error", "-show_entries", "format=duration",
+             "-of", "default=noprint_wrappers=1:nokey=1", path],
+            capture_output=True, text=True, timeout=20,
+        )
+        return float(r.stdout.strip())
+    except Exception:
+        return None
+
+
+def calc_video_bitrate_kbps(duration_sec, target_mb, audio_kbps=160):
+    """Back-solve the video bitrate needed to hit a target file size,
+    after reserving space for the audio track."""
+    target_bits = target_mb * 8 * 1024 * 1024
+    audio_bits = audio_kbps * 1000 * duration_sec
+    video_bitrate = (target_bits - audio_bits) / duration_sec
+    return max(int(video_bitrate / 1000), 100)  # floor at 100kbps so it never goes negative/absurd
+
+
+def run_compress_job(job_id, input_file_id, target_mb, codec, fps_choice):
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    tmp_dir = None
+
+    def set_job(**fields):
+        cols = ", ".join(f"{k} = ?" for k in fields)
+        conn.execute(f"UPDATE compress_jobs SET {cols} WHERE id = ?", (*fields.values(), job_id))
+        conn.commit()
+
+    try:
+        row = conn.execute("SELECT * FROM files WHERE id = ?", (input_file_id,)).fetchone()
+        if not row or row["deleted"]:
+            set_job(status="error", error="input_not_found")
+            return
+
+        set_job(status="downloading", progress=2, message="ვიდეოს გადმოწერა სერვერზე…")
+        tmp_dir = tempfile.mkdtemp(prefix="moonpress_")
+        in_ext = os.path.splitext(row["filename"])[1] or ".mp4"
+        in_path = os.path.join(tmp_dir, "input" + in_ext)
+        out_path = os.path.join(tmp_dir, "output.mp4")
+
+        s3.download_file(R2_BUCKET, row["object_key"], in_path)
+
+        duration = get_video_duration(in_path)
+        if not duration or duration <= 0:
+            set_job(status="error", error="bad_duration")
+            return
+
+        vbitrate = calc_video_bitrate_kbps(duration, target_mb)
+        encoder = "libx265" if codec == "x265" else "libx264"
+
+        cmd = [
+            FFMPEG_BIN, "-y", "-i", in_path,
+            "-c:v", encoder, "-b:v", f"{vbitrate}k",
+            "-maxrate", f"{int(vbitrate * 1.45)}k", "-bufsize", f"{int(vbitrate * 2)}k",
+            "-preset", "fast", "-c:a", "aac", "-b:a", "160k",
+            "-movflags", "+faststart",
+        ]
+        if fps_choice and fps_choice != "source":
+            cmd += ["-r", str(fps_choice)]
+        cmd += ["-progress", "pipe:1", "-nostats", out_path]
+
+        set_job(status="compressing", progress=5, message="შეკუმშვა მიმდინარეობს…")
+
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+        for line in proc.stdout:
+            line = line.strip()
+            if line.startswith("out_time_ms="):
+                try:
+                    out_ms = int(line.split("=", 1)[1])
+                    pct = min(97.0, 5 + (out_ms / 1_000_000 / duration) * 90)
+                    set_job(progress=pct, message=f"შეკუმშვა: {pct:.0f}%")
+                except Exception:
+                    pass
+        proc.wait()
+
+        if proc.returncode != 0 or not os.path.exists(out_path):
+            set_job(status="error", error="ffmpeg_failed")
+            return
+
+        set_job(status="uploading", progress=98, message="მზა ვიდეოს ატვირთვა…")
+
+        out_size = os.path.getsize(out_path)
+        output_file_id = uuid.uuid4().hex[:12]
+        base_name = os.path.splitext(row["filename"])[0]
+        out_filename = f"{base_name}_compressed.mp4"
+        object_key = f"uploads/{output_file_id}/{out_filename}"
+
+        with open(out_path, "rb") as f:
+            s3.upload_fileobj(f, R2_BUCKET, object_key, ExtraArgs={"ContentType": "video/mp4"})
+
+        now = datetime.utcnow()
+        expires_at = now + timedelta(hours=EXPIRY_HOURS)
+        conn.execute(
+            "INSERT INTO files (id, object_key, filename, content_type, size, email, created_at, expires_at, finalized) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)",
+            (output_file_id, object_key, out_filename, "video/mp4", out_size, None, now.isoformat(), expires_at.isoformat()),
+        )
+        conn.commit()
+
+        # the raw original was only needed for encoding — drop it now, keep just the result
+        try:
+            s3.delete_object(Bucket=R2_BUCKET, Key=row["object_key"])
+            conn.execute("UPDATE files SET deleted = 1 WHERE id = ?", (input_file_id,))
+            conn.commit()
+        except Exception as e:
+            print(f"[compress] failed to clean up original {row['object_key']}: {e}")
+
+        set_job(
+            status="done", progress=100, message="მზადაა",
+            output_file_id=output_file_id, output_size=out_size,
+        )
+
+    except Exception as e:
+        set_job(status="error", error=str(e))
+    finally:
+        if tmp_dir:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+        conn.close()
+
+
+# ---------------------------------------------------------------------------
+# Routes — sharing (unchanged)
 # ---------------------------------------------------------------------------
 @app.route("/")
 def index():
@@ -276,7 +435,78 @@ def status(file_id):
     return jsonify({"expires_at": row["expires_at"], "filename": row["filename"], "size": row["size"]})
 
 
+# ---------------------------------------------------------------------------
+# Routes — compression (new)
+# ---------------------------------------------------------------------------
+@app.route("/compress")
+def compress_page():
+    return render_template("compress.html", expiry_hours=EXPIRY_HOURS)
+
+
+@app.route("/api/compress/start", methods=["POST"])
+def compress_start():
+    data = request.get_json(force=True)
+    file_id = data.get("file_id")
+    codec = data.get("codec", "x264")
+    fps_choice = data.get("fps", "source")
+
+    try:
+        target_mb = float(data.get("target_mb", 99))
+    except (TypeError, ValueError):
+        return jsonify({"error": "bad_target"}), 400
+
+    if codec not in ("x264", "x265"):
+        return jsonify({"error": "bad_codec"}), 400
+    if target_mb <= 0 or target_mb > 4000:
+        return jsonify({"error": "bad_target"}), 400
+
+    db = get_db()
+    row = db.execute("SELECT * FROM files WHERE id = ?", (file_id,)).fetchone()
+    if not row or row["deleted"]:
+        return jsonify({"error": "not_found"}), 404
+
+    job_id = uuid.uuid4().hex[:12]
+    db.execute(
+        "INSERT INTO compress_jobs "
+        "(id, input_file_id, filename, target_mb, codec, fps, status, progress, original_size, created_at) "
+        "VALUES (?, ?, ?, ?, ?, ?, 'queued', 0, ?, ?)",
+        (job_id, file_id, row["filename"], target_mb, codec, fps_choice, row["size"], datetime.utcnow().isoformat()),
+    )
+    db.commit()
+
+    threading.Thread(
+        target=run_compress_job,
+        args=(job_id, file_id, target_mb, codec, fps_choice),
+        daemon=True,
+    ).start()
+
+    return jsonify({"job_id": job_id})
+
+
+@app.route("/api/compress/status/<job_id>")
+def compress_status(job_id):
+    db = get_db()
+    row = db.execute("SELECT * FROM compress_jobs WHERE id = ?", (job_id,)).fetchone()
+    if not row:
+        return jsonify({"error": "not_found"}), 404
+
+    resp = {
+        "status": row["status"],
+        "progress": row["progress"],
+        "message": row["message"],
+        "original_size": row["original_size"],
+        "output_size": row["output_size"],
+        "error": row["error"],
+    }
+    if row["status"] == "done" and row["output_file_id"]:
+        resp["file_id"] = row["output_file_id"]
+        resp["download_page"] = f"/d/{row['output_file_id']}"
+
+    return jsonify(resp)
+
+
 init_db()
+init_compress_table()
 cleanup_thread = threading.Thread(target=cleanup_loop, daemon=True)
 cleanup_thread.start()
 
