@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ვიდეოს შეკუმშვა — მთვარისფერი</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Georgian:wght@400;600;700&family=Noto+Sans+Georgian:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="stars" aria-hidden="true"></div>
+
+<header class="topbar">
+  <div class="brand">მთვარისფერი</div>
+  <div class="topbar-right">
+    <a href="/" class="nav-link">ფაილის გაზიარება</a>
+    <div class="tagline">ვადა: {{ expiry_hours|int }} საათი</div>
+  </div>
+</header>
+
+<main class="hero">
+  <div class="hero-copy">
+    <h1>შეკუმშე ვიდეო.<br>აირჩიე ზომა.<br><span class="accent">ხარისხი დარჩეს.</span></h1>
+    <p class="sub">აირჩიე სასურველი წონა და კოდეკი — სერვერი თავად გამოთვლის ოპტიმალურ ბიტრეიტს და შეკუმშავს ვიდეოს პირდაპირ, შენი ბრაუზერის დატვირთვის გარეშე.</p>
+  </div>
+
+  <div class="moon-wrap">
+    <div class="moon" id="moon">
+      <div class="moon-mask">
+        <div class="moon-dark"></div>
+        <div class="moon-light" id="moonLight"></div>
+      </div>
+      <input type="file" id="fileInput" accept="video/*" hidden>
+      <div class="moon-label" id="moonLabel">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 3v12m0 0l-4-4m4 4l4-4M5 19h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>ჩააგდე ვიდეო აქ<br>ან დააჭირე ასარჩევად</span>
+      </div>
+    </div>
+  </div>
+</main>
+
+<section class="panel" id="settingsPanel" hidden>
+  <div class="panel-inner">
+    <p class="panel-file" id="settingsFileName">—</p>
+
+    <div class="settings-grid">
+      <div class="field">
+        <label for="codecSelect">კოდეკი</label>
+        <select id="codecSelect">
+          <option value="x264">H.264 (თავსებადი)</option>
+          <option value="x265">H.265 (მცირე ზომა)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="fpsSelect">კადრები (FPS)</label>
+        <select id="fpsSelect">
+          <option value="source">როგორც არის</option>
+          <option value="30">30 FPS</option>
+          <option value="60">60 FPS</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="targetInput">სასურველი ზომა (MB)</label>
+        <input type="number" id="targetInput" value="99" min="1" max="4000" step="1">
+      </div>
+    </div>
+
+    <button id="startCompressBtn" class="download-btn full-width">შეკუმშვის დაწყება</button>
+  </div>
+</section>
+
+<section class="panel" id="progressPanel" hidden>
+  <div class="panel-inner">
+    <p class="panel-file" id="fileName">—</p>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <p class="panel-status" id="statusText">იტვირთება…</p>
+  </div>
+</section>
+
+<section class="panel" id="resultPanel" hidden>
+  <div class="panel-inner">
+    <p class="panel-label">შეკუმშვა დასრულდა</p>
+    <div class="compress-stats">
+      <span>იყო: <strong id="origSize">—</strong></span>
+      <span>გახდა: <strong id="newSize">—</strong></span>
+      <span class="reduction-badge" id="reductionBadge">—</span>
+    </div>
+    <a href="#" id="downloadResultBtn" class="download-btn full-width">ვიდეოს გადმოწერა</a>
+    <p class="countdown" id="countdown"></p>
+  </div>
+</section>
+
+<section class="panel" id="errorPanel" hidden>
+  <div class="panel-inner">
+    <p class="panel-status" id="errorText">დაფიქსირდა შეცდომა.</p>
+  </div>
+</section>
+
+<footer class="foot">
+  <p>შეკუმშული ფაილიც ავტომატურად და შეუქცევადად იშლება ვადის ამოწურვისას.</p>
+</footer>
+
+<script src="{{ url_for('static', filename='compress.js') }}"></script>
+</body>
+</html>
