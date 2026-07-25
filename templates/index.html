@@ -14,7 +14,10 @@
 
 <header class="topbar">
   <div class="brand">მთვარისფერი</div>
-  <div class="tagline">ვადა: {{ expiry_hours|int }} საათი</div>
+  <div class="topbar-right">
+    <a href="/compress" class="nav-link">ვიდეოს შეკუმშვა</a>
+    <div class="tagline">ვადა: {{ expiry_hours|int }} საათი</div>
+  </div>
 </header>
 
 <main class="hero">
