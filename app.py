@@ -40,6 +40,18 @@ if not R2_ACCOUNT_ID or not R2_ACCESS_KEY_ID or not R2_SECRET_ACCESS_KEY:
 BASE_URL = os.environ.get("BASE_URL", "http://localhost:5000")
 EXPIRY_HOURS = float(os.environ.get("EXPIRY_HOURS", "6"))
 
+# ---------------------------------------------------------------------------
+# CORS — lets the order/calculator site (moonfull4k.xyz) call the upload
+# API on this domain directly from browser JS, instead of the customer
+# manually opening this site in a new tab and re-uploading by hand.
+# Kept to an explicit allowlist (not "*") since these endpoints hand out
+# presigned upload URLs. Add more origins via env var if needed, comma-separated.
+# ---------------------------------------------------------------------------
+_default_origins = "https://moonfull4k.xyz,https://www.moonfull4k.xyz"
+ALLOWED_ORIGINS = {
+    o.strip() for o in os.environ.get("ALLOWED_ORIGINS", _default_origins).split(",") if o.strip()
+}
+
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
 RESEND_FROM = os.environ.get("RESEND_FROM", "onboarding@resend.dev")
 
@@ -52,6 +64,19 @@ FFMPEG_BIN = os.environ.get("FFMPEG_BIN", "ffmpeg")
 FFPROBE_BIN = os.environ.get("FFPROBE_BIN", "ffprobe")
 
 app = Flask(__name__)
+
+
+@app.after_request
+def add_cors_headers(response):
+    origin = request.headers.get("Origin")
+    if origin in ALLOWED_ORIGINS:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+        response.headers["Access-Control-Max-Age"] = "600"
+        response.headers["Vary"] = "Origin"
+    return response
+
 
 s3 = boto3.client(
     "s3",
@@ -329,8 +354,11 @@ def index():
     return render_template("index.html", expiry_hours=EXPIRY_HOURS)
 
 
-@app.route("/api/request-upload", methods=["POST"])
+@app.route("/api/request-upload", methods=["POST", "OPTIONS"])
 def request_upload():
+    if request.method == "OPTIONS":
+        return ("", 204)
+
     data = request.get_json(force=True)
     filename = data.get("filename", "video")
     content_type = data.get("content_type", "application/octet-stream")
@@ -361,8 +389,11 @@ def request_upload():
     return jsonify({"file_id": file_id, "upload_url": upload_url})
 
 
-@app.route("/api/finalize", methods=["POST"])
+@app.route("/api/finalize", methods=["POST", "OPTIONS"])
 def finalize():
+    if request.method == "OPTIONS":
+        return ("", 204)
+
     data = request.get_json(force=True)
     file_id = data.get("file_id")
     email = data.get("email")
