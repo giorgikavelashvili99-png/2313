@@ -52,6 +52,30 @@ ALLOWED_ORIGINS = {
     o.strip() for o in os.environ.get("ALLOWED_ORIGINS", _default_origins).split(",") if o.strip()
 }
 
+# The order site also gets tested/shared from its own Render preview URL
+# (e.g. https://something.onrender.com) before/alongside the moonfull4k.xyz
+# domain — that origin doesn't match the explicit allowlist above, so it
+# was silently CORS-blocked: the browser never even shows an error message
+# useful for debugging, it just refuses the request. That's the exact
+# split this app had — working from the real domain on desktop, failing
+# from a Render preview link on mobile. Trusting the whole onrender.com
+# suffix here is a deliberate, narrow loosening (only *.onrender.com,
+# still HTTPS-only, still not "*") so any of your own Render deployments
+# work without having to list each preview URL by hand. Tighten back to
+# an explicit list once you're settled on a final production domain.
+_ALLOWED_ORIGIN_SUFFIXES = (".onrender.com",)
+
+
+def _origin_allowed(origin):
+    if not origin:
+        return False
+    if origin in ALLOWED_ORIGINS:
+        return True
+    if origin.startswith("https://") and origin.endswith(_ALLOWED_ORIGIN_SUFFIXES):
+        return True
+    return False
+
+
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
 RESEND_FROM = os.environ.get("RESEND_FROM", "onboarding@resend.dev")
 
@@ -69,7 +93,7 @@ app = Flask(__name__)
 @app.after_request
 def add_cors_headers(response):
     origin = request.headers.get("Origin")
-    if origin in ALLOWED_ORIGINS:
+    if _origin_allowed(origin):
         response.headers["Access-Control-Allow-Origin"] = origin
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
         response.headers["Access-Control-Allow-Headers"] = "Content-Type"
